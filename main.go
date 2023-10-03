@@ -5,28 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/TylerBrock/colorjson"
 	"github.com/rivo/tview"
 )
 
-func main() {
-
-	var input string
-	fmt.Scanf("%s", &input)
-
-	bytes, err := b64.StdEncoding.DecodeString(input)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to decode input %v\n", err)
-		os.Exit(1)
-	}
-
+func prettyPrintJson(s string) string {
 	var obj map[string]interface{}
-	err = json.Unmarshal(bytes, &obj)
+	err := json.Unmarshal([]byte(s), &obj)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid input %v\n", err)
-		os.Exit(1)
+		return s
 	}
+
 	// Make a custom formatter with indent set
 	fmt.Printf("%v\n", obj)
 
@@ -34,7 +25,30 @@ func main() {
 	f.Indent = 4
 
 	// Marshall the Colorized JSON
-	jsonToken, _ := f.Marshal(obj)
+	jsonToken, err := f.Marshal(obj)
+
+	if err != nil {
+		return s
+	}
+
+	return string(jsonToken)
+}
+
+func main() {
+
+	var input string
+	fmt.Scanf("%s", &input)
+
+	parts := strings.Split(input, ".")
+
+	if len(parts) != 3 {
+		fmt.Fprintf(os.Stderr, "Invalid JWT\n")
+		os.Exit(1)
+	}
+
+	header, _ := b64.URLEncoding.DecodeString(parts[0])
+	body, _ := b64.URLEncoding.DecodeString(parts[1])
+	sig, _ := b64.URLEncoding.DecodeString(parts[2])
 
 	app := tview.NewApplication()
 	tokenTextArea := tview.NewTextView().
@@ -49,8 +63,12 @@ func main() {
 		})
 	jsonTextArea.SetBorder(true).SetTitle("Token")
 
+	tokenPrettyPrint := fmt.Sprintf("%s\n%s\n%s",
+		prettyPrintJson(string(header)), prettyPrintJson(string(body)), string(sig),
+	)
+
 	w := tview.ANSIWriter(jsonTextArea)
-	w.Write([]byte(jsonToken))
+	w.Write([]byte(tokenPrettyPrint))
 
 	flex := tview.NewFlex().
 		AddItem(tokenTextArea, 0, 1, false).
