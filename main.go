@@ -46,9 +46,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	header, _ := b64.URLEncoding.DecodeString(parts[0])
-	body, _ := b64.URLEncoding.DecodeString(parts[1])
-	sig, _ := b64.URLEncoding.DecodeString(parts[2])
+	header, _ := b64.RawURLEncoding.DecodeString(parts[0])
+	body, _ := b64.RawURLEncoding.DecodeString(parts[1])
+	sig := parts[2]
 
 	app := tview.NewApplication()
 	tokenTextArea := tview.NewTextView().
